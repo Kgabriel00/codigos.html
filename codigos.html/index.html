@@ -1,0 +1,1260 @@
+<html lang="pt-br">
+
+<head>
+    <title>Início - SUAP: Sistema Unificado de Administração Pública</title>
+    <meta charset="utf-8">
+    <meta name="keywords" content="suap, administração, pública, mec, ifrn">
+    <meta content="SUAP: Sistema Unificado de Administração Pública" name="description">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="NONE,NOARCHIVE">
+    <link rel="shortcut icon" href="/static/comum/img/favicon-warning.png?v=3ff8dedba389b8a3f98013e9f7127c75" />
+    <link href="css/main_luna.css" rel="stylesheet" type="text/css" media="all" />
+    <script type="text/javascript" src="JS/jquery.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="JS/jquery.ui.custom.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="JS/main.js" charset="utf-8"></script>
+    <script type="text/javascript" src="JS/select2.js" charset="utf-8"></script>
+    <link href="css/select2.min.css" rel="stylesheet" type="text/css" media="all" />
+    <script type="text/javascript" src="JS/nouislider.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="JS/base64.js" charset="utf-8"></script>
+    <script>
+        jQuery(document).ready(function () {
+            initAll();
+            initMenu();
+
+            /* Menu principal: Para dispositivos moveis */
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                jQuery("body").addClass("hideSidebar");
+            }
+        });
+    </script>
+    <script type="text/javascript" src="JS/tabs.js" charset="utf-8"></script>
+    <script type="text/javascript" src="JS/highcharts.js" charset="utf-8"></script>
+    <script type="text/javascript" src="JS/exporting.js" charset="utf-8"></script>
+    <script>
+        const carregarAlertas = () => {
+            $('.alertas .loader').show();
+            $('.alertas .content').hide();
+            $.ajax({
+                type: "GET",
+                url: "/comum/index/meus_alertas/",
+            }).done((data) => {
+                $('.alertas .loader').hide();
+                $('.alertas .reload-button').css('display', 'flex');
+                if (!data.trim()) {
+                    $(".alertas").hide();
+                    $("body").removeClass("hasAsideLeft");
+                } else {
+                    $(".alertas .content").html(data);
+                    $('.alertas .content').show();
+                }
+            }
+            ).fail((data) => {
+                $('.alertas .loader').hide();
+                $('.alertas .content').html('<h4 style="color: red">Erro ao baixar dados. Recarregue esta página novamente.</h4>');
+                $('.alertas .reload-button').css('display', 'flex');
+            }
+            );
+
+            $.ajax({
+                type: "GET",
+                url: "/comum/contador_minhas_notificacoes/",
+            }).done((data) => {
+                let contador = data['contador'];
+                let selector = $("header .notifications > a .counter");
+                $("header .notifications > a span").removeClass('hidden');
+                selector.html(contador);
+                if (contador > 0) {
+                    selector.show();
+                    $('link[rel="shortcut icon"]').attr('href', '/static/comum/img/favicon-warning.png');
+                } else {
+                    selector.hide();
+                    $('link[rel="shortcut icon"]').attr('href', '/static/comum/img/favicon.png');
+                }
+            }
+            );
+        }
+
+        const inicializarQuadros = () => {
+            $('.coluna-esquerda .loader').show();
+            $('.coluna-centro .loader').show();
+            $('.coluna-direita .loader').show();
+            $.ajax({
+                type: "GET",
+                url: "esquerda",
+            }).done((data) => {
+                $('.coluna-esquerda .loader').hide();
+                $('.coluna-esquerda').append(data);
+            }
+            ).fail((data) => {
+                $('.coluna-esquerda .loader').hide();
+                $('.coluna-esquerda .content').html('<h4 style="color: red">Erro ao baixar dados. Recarregue esta página novamente.</h4>');
+            }
+            );
+
+            $.ajax({
+                type: "GET",
+                url: "/comum/index/meus_quadros_por_coluna/centro/",
+            }).done((data) => {
+                $('.coluna-centro .loader').hide();
+                $('.coluna-centro').append(data);
+            }
+            ).fail((data) => {
+                $('.coluna-centro .loader').hide();
+                $('.coluna-centro .content').html('<h4 style="color: red">Erro ao baixar dados. Recarregue esta página novamente.</h4>');
+            }
+            );
+
+            $.ajax({
+                type: "GET",
+                url: "/comum/index/meus_quadros_por_coluna/direita/",
+            }).done((data) => {
+                $('.coluna-direita .loader').hide();
+                $('.coluna-direita').append(data);
+            }
+            ).fail((data) => {
+                $('.coluna-direita .loader').hide();
+                $('.coluna-direita .content').html('<h4 style="color: red">Erro ao baixar dados. Recarregue esta página novamente.</h4>');
+            }
+            );
+
+            $(document).ajaxComplete(() => {
+                $(".coluna").sortable({
+                    connectWith: ".coluna",
+                    handle: ".portlet-header",
+                    cancel: ".portlet-toggle",
+                    placeholder: "portlet-placeholder ui-corner-all",
+                    beforeStop: function (event, ui) {
+                        item = ui.item[0];
+                        coluna = '3';
+                        cont_item = $(item).prevAll().length;
+
+                        if ($(item.parentElement).hasClass('coluna-esquerda')) {
+                            coluna = '1';
+                        } else {
+                            if ($(item.parentElement).hasClass('coluna-centro')) {
+                                coluna = '2';
+                            }
+                        }
+
+                        $.ajax({
+                            type: "POST",
+                            url: "/comum/index/layout/",
+                            data: {
+                                titulo: $(item).find('.portlet-header').find('.titulo')[0].getAttribute("data-quadro"),
+                                coluna: coluna,
+                                ordem: cont_item
+                            }
+                        });
+                    }
+                });
+                $(".esconder-quadro").click(function () {
+                    $.ajax({
+                        type: "POST",
+                        url: "/comum/index/esconder_quadro/",
+                        data: {
+                            titulo: $(this).data('quadro')
+                        }
+                    });
+                    $(this).parent().parent().hide();
+                });
+                $(".marcar-quadro-como-lido").click(function () {
+                    $.ajax({
+                        type: "POST",
+                        url: "/comum/index/marcar_quadro_como_lido/" + $(this).data('hash') + "/",
+                        data: {
+                            titulo: $(this).data('quadro')
+                        }
+                    });
+                    $(this).parent().parent().hide();
+                });
+            }
+            );
+        }
+
+        const carregarPainelControleSecretarioAcademico = () => {
+            $.ajax({
+                type: "GET",
+                url: `/comum/index/painel_controle_secretario_academico/${window.location.search}`
+            }).done((data) => {
+                if (data.trim()) {
+                    $(`[id='painel-controle-secretario-academico']`).html(data);
+                } else {
+                    $(`[id='painel-controle-secretario-academico']`).hide();
+                }
+            }
+            );
+        }
+
+        $(function () {
+            carregarAlertas();
+            inicializarQuadros();
+            $('.alertas button').click(() => {
+                carregarAlertas();
+            }
+            );
+        });
+    </script>
+</head>
+
+<body class="theme-luna index hasAsideLeft">
+    <div class="holder">
+        <a href="#" class="toggleSidebar">
+            <span class="fas fa-chevron-left" aria-hidden="true"></span>
+        </a>
+        <aside class="nav">
+            <header>
+                <h1>
+                    <a href="/" title="SUAP: Sistema Unificado de Administração Pública">SUAP: Sistema Unificado de
+                        Administração Pública</a>
+                </h1>
+                <div class="notifications">
+                    <a href="/comum/notificacoes/">
+                        <span class="counter ">70</span>
+                        <span class="fas fa-bell" aria-hidden="true"></span>
+                        <span class="sr-only">Notificações</span>
+                    </a>
+                </div>
+                <div id="user-tools">
+                    <a href="/edu/aluno/20221034010039/" class="user-profile">
+                        <div class="photo-circle small">
+                            <img src="Image/user-icon.png" alt="Foto de usuário">
+                        </div>
+                        <span title="Vínculo: 20221034010039">Nome do aluno</span>
+                    </a>
+                    <a href="/comum/minha_conta/" class="minha-conta" title="Minha Conta">
+                        <span class="fas fa-user" aria-hidden="true"></span>
+                        <span class="sr-only">Minha Conta</span>
+                    </a>
+                </div>
+            </header>
+            <form id="__buscar_menu__" action="" onsubmit="return false;" class="buscar_menu" role="search">
+                <input type="search" placeholder="Buscar Menu" id="__filterinput__" autofocus />
+            </form>
+            <nav id="mainmenu">
+                <ul class="_main_menu">
+                    <li class="menu-inicio">
+                        <a href="index.html">
+                            <span class="fas fa-home" aria-hidden="true"></span>
+                            <span>
+                                Início
+                            </span>
+                        </a>
+                    </li>
+                    <li class="has-child menu-documentosprocessos">
+                        <a href="#" title="Documentos/Processos">
+                            <span class="fas fa-documentosprocessos" aria-hidden="true"></span>
+                            <span>Documentos/Processos</span>
+                        </a>
+                        <ul>
+                            <li class="has-child">
+                                <a href="#" title="Documentos Eletrônicos">
+                                    <span>Documentos Eletrônicos</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-documentosprocessos_documentoseletrônicos_dashboard">
+                                        <a href="/djtools/breadcrumbs_reset/documentosprocessos_documentoseletrônicos_dashboard/documento_eletronico/dashboard/"
+                                            title="Dashboard">
+                                            <span>Dashboard</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-documentosprocessos_documentoseletrônicos_documentos">
+                                        <a href="/djtools/breadcrumbs_reset/documentosprocessos_documentoseletrônicos_documentos/admin/documento_eletronico/documentotexto/?opcao=1"
+                                            title="Documentos">
+                                            <span>Documentos</span>
+                                        </a>
+                                    </li>
+                                    <li class=""
+                                        id="menu-item-documentosprocessos_documentoseletrônicos_documentospessoais">
+                                        <a href="/djtools/breadcrumbs_reset/documentosprocessos_documentoseletrônicos_documentospessoais/admin/documento_eletronico/documentotextopessoal/"
+                                            title="Documentos Pessoais">
+                                            <span>Documentos Pessoais</span>
+                                        </a>
+                                    </li>
+                                    <li class=""
+                                        id="menu-item-documentosprocessos_documentoseletrônicos_documentospessoaisdigitalizados">
+                                        <a href="/djtools/breadcrumbs_reset/documentosprocessos_documentoseletrônicos_documentospessoaisdigitalizados/admin/documento_eletronico/documentodigitalizadopessoal/"
+                                            title="Documentos Pessoais Digitalizados">
+                                            <span>Documentos Pessoais Digitalizados</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Processos Eletrônicos">
+                                    <span>Processos Eletrônicos</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-documentosprocessos_processoseletrônicos_processos">
+                                        <a href="/djtools/breadcrumbs_reset/documentosprocessos_processoseletrônicos_processos/admin/processo_eletronico/processo/?opcao=1"
+                                            title="Processos">
+                                            <span>Processos</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Processos Físicos">
+                                    <span>Processos Físicos</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-documentosprocessos_processosfísicos_processos">
+                                        <a href="/djtools/breadcrumbs_reset/documentosprocessos_processosfísicos_processos/admin/protocolo/processo/"
+                                            title="Processos">
+                                            <span>Processos</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="has-child menu-ensino">
+                        <a href="#" title="Ensino">
+                            <span class="fas fa-ensino" aria-hidden="true"></span>
+                            <span>Ensino</span>
+                        </a>
+                        <ul>
+                            <li class="" id="menu-item-ensino_agendadedefesasdetcc">
+                                <a href="/djtools/breadcrumbs_reset/ensino_agendadedefesasdetcc/edu/visualizar_agenda_defesas/"
+                                    title="Agenda de Defesas de TCC">
+                                    <span>Agenda de Defesas de TCC</span>
+                                </a>
+                            </li>
+                            <li class="" id="menu-item-ensino_boletins">
+                                <a href="/djtools/breadcrumbs_reset/ensino_boletins/edu/boletim_aluno/"
+                                    title="Boletins">
+                                    <span>Boletins</span>
+                                </a>
+                            </li>
+                            <li class="" id="menu-item-ensino_caixademensagens">
+                                <a href="/djtools/breadcrumbs_reset/ensino_caixademensagens/admin/edu/mensagementrada/"
+                                    title="Caixa de Mensagens">
+                                    <span>Caixa de Mensagens</span>
+                                </a>
+                            </li>
+                            <li class="" id="menu-item-ensino_dadosdoaluno">
+                                <a href="/djtools/breadcrumbs_reset/ensino_dadosdoaluno/edu/meus_dados_academicos/"
+                                    title="Dados do Aluno">
+                                    <span>Dados do Aluno</span>
+                                </a>
+                            </li>
+                            <li class="" id="menu-item-ensino_estágiosdocentes">
+                                <a href="/djtools/breadcrumbs_reset/ensino_estágiosdocentes/admin/edu/estagiodocente/"
+                                    title="Estágios Docentes">
+                                    <span>Estágios Docentes</span>
+                                </a>
+                            </li>
+                            <li class="" id="menu-item-ensino_locaisehoráriosdeaula">
+                                <a href="/djtools/breadcrumbs_reset/ensino_locaisehoráriosdeaula/edu/locais_aula_aluno/"
+                                    title="Locais e Horários de Aula">
+                                    <span>Locais e Horários de Aula</span>
+                                </a>
+                            </li>
+                            <li class="" id="menu-item-ensino_minhasavaliações">
+                                <a href="/djtools/breadcrumbs_reset/ensino_minhasavaliações/edu/calendario_avaliacao/"
+                                    title="Minhas Avaliações">
+                                    <span>Minhas Avaliações</span>
+                                </a>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Processos Seletivos">
+                                    <span>Processos Seletivos</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-ensino_processosseletivos_inscriçõesparafiscal">
+                                        <a href="/djtools/breadcrumbs_reset/ensino_processosseletivos_inscriçõesparafiscal/admin/processo_seletivo/inscricaofiscal/"
+                                            title="Inscrições para Fiscal">
+                                            <span>Inscrições para Fiscal</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="" id="menu-item-ensino_minhasdisciplinas">
+                                <a href="/djtools/breadcrumbs_reset/ensino_minhasdisciplinas/edu/disciplinas/"
+                                    title="Minhas Disciplinas">
+                                    <span>Minhas Disciplinas</span>
+                                </a>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Projetos">
+                                    <span>Projetos</span>
+                                </a>
+                                <ul>
+                                    <li class="has-child">
+                                        <a href="#" title="Editais">
+                                            <span>Editais</span>
+                                        </a>
+                                        <ul>
+                                            <li class="" id="menu-item-ensino_projetos_editais_editais">
+                                                <a href="/djtools/breadcrumbs_reset/ensino_projetos_editais_editais/projetos_ensino/editais/"
+                                                    title="Editais">
+                                                    <span>Editais</span>
+                                                </a>
+                                            </li>
+                                            <li class="" id="menu-item-ensino_projetos_editais_resultadofinal">
+                                                <a href="/djtools/breadcrumbs_reset/ensino_projetos_editais_resultadofinal/projetos_ensino/resultado_edital/1/"
+                                                    title="Resultado Final">
+                                                    <span>Resultado Final</span>
+                                                </a>
+                                            </li>
+                                            <li class="" id="menu-item-ensino_projetos_editais_resultadoparcial">
+                                                <a href="/djtools/breadcrumbs_reset/ensino_projetos_editais_resultadoparcial/projetos_ensino/resultado_edital/2/"
+                                                    title="Resultado Parcial">
+                                                    <span>Resultado Parcial</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li class="" id="menu-item-ensino_projetos_meusprojetos">
+                                        <a href="/djtools/breadcrumbs_reset/ensino_projetos_meusprojetos/projetos_ensino/meus_projetos/"
+                                            title="Meus Projetos">
+                                            <span>Meus Projetos</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-ensino_projetos_submeterprojetos">
+                                        <a href="/djtools/breadcrumbs_reset/ensino_projetos_submeterprojetos/projetos_ensino/editais_abertos/"
+                                            title="Submeter Projetos">
+                                            <span>Submeter Projetos</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="PPC">
+                                    <span>PPC</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-ensino_ppc_planosdedisciplinasdecursos">
+                                        <a href="/djtools/breadcrumbs_reset/ensino_ppc_planosdedisciplinasdecursos/admin/ppc/planodisciplinappc/"
+                                            title="Planos de disciplinas de cursos">
+                                            <span>Planos de disciplinas de cursos</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="has-child menu-pesquisa">
+                        <a href="#" title="Pesquisa">
+                            <span class="fas fa-pesquisa" aria-hidden="true"></span>
+                            <span>Pesquisa</span>
+                        </a>
+                        <ul>
+                            <li class="has-child">
+                                <a href="#" title="Editais">
+                                    <span>Editais</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-pesquisa_editais_editais">
+                                        <a href="/djtools/breadcrumbs_reset/pesquisa_editais_editais/pesquisa/editais/"
+                                            title="Editais">
+                                            <span>Editais</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-pesquisa_editais_resultadofinal">
+                                        <a href="/djtools/breadcrumbs_reset/pesquisa_editais_resultadofinal/pesquisa/resultado_edital/"
+                                            title="Resultado Final">
+                                            <span>Resultado Final</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-pesquisa_editais_resultadoparcial">
+                                        <a href="/djtools/breadcrumbs_reset/pesquisa_editais_resultadoparcial/pesquisa/resultado_edital_parcial/"
+                                            title="Resultado Parcial">
+                                            <span>Resultado Parcial</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Projetos">
+                                    <span>Projetos</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-pesquisa_projetos_meusprojetos">
+                                        <a href="/djtools/breadcrumbs_reset/pesquisa_projetos_meusprojetos/pesquisa/meus_projetos/"
+                                            title="Meus Projetos">
+                                            <span>Meus Projetos</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-pesquisa_projetos_meusrecursos">
+                                        <a href="/djtools/breadcrumbs_reset/pesquisa_projetos_meusrecursos/pesquisa/meus_recursos/"
+                                            title="Meus Recursos">
+                                            <span>Meus Recursos</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-pesquisa_projetos_submeterprojetos">
+                                        <a href="/djtools/breadcrumbs_reset/pesquisa_projetos_submeterprojetos/pesquisa/editais_abertos/"
+                                            title="Submeter Projetos">
+                                            <span>Submeter Projetos</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Editora">
+                                    <span>Editora</span>
+                                </a>
+                                <ul>
+                                    <li class="has-child">
+                                        <a href="#" title="Submissão de Obras">
+                                            <span>Submissão de Obras</span>
+                                        </a>
+                                        <ul>
+                                            <li class="" id="menu-item-pesquisa_editora_submissãodeobras_minhasobras">
+                                                <a href="/djtools/breadcrumbs_reset/pesquisa_editora_submissãodeobras_minhasobras/pesquisa/minhas_obras/"
+                                                    title="Minhas Obras">
+                                                    <span>Minhas Obras</span>
+                                                </a>
+                                            </li>
+                                            <li class="" id="menu-item-pesquisa_editora_submissãodeobras_submeterobra">
+                                                <a href="/djtools/breadcrumbs_reset/pesquisa_editora_submissãodeobras_submeterobra/pesquisa/editais_abertos_submissao_obra/"
+                                                    title="Submeter Obra">
+                                                    <span>Submeter Obra</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li class="" id="menu-item-pesquisa_editora_doaçõesrealizadas">
+                                        <a href="/djtools/breadcrumbs_reset/pesquisa_editora_doaçõesrealizadas/admin/pesquisa/doacaoeditora/"
+                                            title="Doações Realizadas">
+                                            <span>Doações Realizadas</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Laboratórios">
+                                    <span>Laboratórios</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-pesquisa_laboratórios_laboratórios">
+                                        <a href="/djtools/breadcrumbs_reset/pesquisa_laboratórios_laboratórios/pesquisa/laboratorios_pesquisa/"
+                                            title="Laboratórios">
+                                            <span>Laboratórios</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-pesquisa_laboratórios_minhassolicitações">
+                                        <a href="/djtools/breadcrumbs_reset/pesquisa_laboratórios_minhassolicitações/pesquisa/minhas_solicitacoes_servicos/"
+                                            title="Minhas Solicitações">
+                                            <span>Minhas Solicitações</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="has-child menu-extensao">
+                        <a href="#" title="Extensão">
+                            <span class="fas fa-extensao" aria-hidden="true"></span>
+                            <span>Extensão</span>
+                        </a>
+                        <ul>
+                            <li class="has-child">
+                                <a href="#" title="Convênios">
+                                    <span>Convênios</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-extensão_convênios_convênios">
+                                        <a href="/djtools/breadcrumbs_reset/extensão_convênios_convênios/admin/convenios/convenio/"
+                                            title="Convênios">
+                                            <span>Convênios</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Estágio e Afins">
+                                    <span>Estágio e Afins</span>
+                                </a>
+                                <ul>
+                                    <li class=""
+                                        id="menu-item-extensão_estágioeafins_ofertasdeestágiooujovemaprendizcominscriçõesemandamento">
+                                        <a href="/djtools/breadcrumbs_reset/extensão_estágioeafins_ofertasdeestágiooujovemaprendizcominscriçõesemandamento/estagios/ofertas_pratica_profissional/"
+                                            title="Ofertas de Estágio ou Jovem Aprendiz com Inscrições em Andamento">
+                                            <span>Ofertas de Estágio ou Jovem Aprendiz com Inscrições em
+                                                Andamento</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Egressos">
+                                    <span>Egressos</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-extensão_egressos_pesquisasdeegressorespondidas">
+                                        <a href="/djtools/breadcrumbs_reset/extensão_egressos_pesquisasdeegressorespondidas/egressos/pesquisas_respondidas/"
+                                            title="Pesquisas de Egresso Respondidas">
+                                            <span>Pesquisas de Egresso Respondidas</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Projetos">
+                                    <span>Projetos</span>
+                                </a>
+                                <ul>
+                                    <li class="has-child">
+                                        <a href="#" title="Editais">
+                                            <span>Editais</span>
+                                        </a>
+                                        <ul>
+                                            <li class="" id="menu-item-extensão_projetos_editais_editais">
+                                                <a href="/djtools/breadcrumbs_reset/extensão_projetos_editais_editais/projetos/editais/"
+                                                    title="Editais">
+                                                    <span>Editais</span>
+                                                </a>
+                                            </li>
+                                            <li class="" id="menu-item-extensão_projetos_editais_resultadofinal">
+                                                <a href="/djtools/breadcrumbs_reset/extensão_projetos_editais_resultadofinal/projetos/resultado_edital/1/"
+                                                    title="Resultado Final">
+                                                    <span>Resultado Final</span>
+                                                </a>
+                                            </li>
+                                            <li class="" id="menu-item-extensão_projetos_editais_resultadoparcial">
+                                                <a href="/djtools/breadcrumbs_reset/extensão_projetos_editais_resultadoparcial/projetos/resultado_edital/2/"
+                                                    title="Resultado Parcial">
+                                                    <span>Resultado Parcial</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li class="" id="menu-item-extensão_projetos_meusprojetos">
+                                        <a href="/djtools/breadcrumbs_reset/extensão_projetos_meusprojetos/projetos/meus_projetos/"
+                                            title="Meus Projetos">
+                                            <span>Meus Projetos</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-extensão_projetos_projetos">
+                                        <a href="/djtools/breadcrumbs_reset/extensão_projetos_projetos/projetos/lista_todos_os_projetos/"
+                                            title="Projetos">
+                                            <span>Projetos</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="" id="menu-item-extensão_núcleosdeextensãoepráticaprofissionalnepp">
+                                <a href="/djtools/breadcrumbs_reset/extensão_núcleosdeextensãoepráticaprofissionalnepp/projetos/lista_nepp/"
+                                    title="Núcleos de Extensão e Prática Profissional - NEPP">
+                                    <span>Núcleos de Extensão e Prática Profissional - NEPP</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="has-child menu-tec-da-informacao">
+                        <a href="#" title="Tec. da Informação">
+                            <span class="fas fa-tec-da-informacao" aria-hidden="true"></span>
+                            <span>Tec. da Informação</span>
+                        </a>
+                        <ul>
+                            <li class="has-child">
+                                <a href="#" title="Desenvolvimento">
+                                    <span>Desenvolvimento</span>
+                                </a>
+                                <ul>
+                                    <li class="has-child">
+                                        <a href="#" title="Cadastros">
+                                            <span>Cadastros</span>
+                                        </a>
+                                        <ul>
+                                            <li class=""
+                                                id="menu-item-tecdainformação_desenvolvimento_cadastros_manutençõesprogramadas">
+                                                <a href="/djtools/breadcrumbs_reset/tecdainformação_desenvolvimento_cadastros_manutençõesprogramadas/admin/comum/manutencaoprogramada/"
+                                                    title="Manutenções Programadas">
+                                                    <span>Manutenções Programadas</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li class="" id="menu-item-tecdainformação_desenvolvimento_erros">
+                                        <a href="/djtools/breadcrumbs_reset/tecdainformação_desenvolvimento_erros/erros/areas/"
+                                            title="Erros">
+                                            <span>Erros</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Segurança">
+                                    <span>Segurança</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-tecdainformação_segurança_dispositivos">
+                                        <a href="/djtools/breadcrumbs_reset/tecdainformação_segurança_dispositivos/admin/comum/device/"
+                                            title="Dispositivos">
+                                            <span>Dispositivos</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-tecdainformação_segurança_sessões">
+                                        <a href="/djtools/breadcrumbs_reset/tecdainformação_segurança_sessões/admin/comum/sessioninfo/"
+                                            title="Sessões">
+                                            <span>Sessões</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Serviços">
+                                    <span>Serviços</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-tecdainformação_serviços_azure">
+                                        <a href="/djtools/breadcrumbs_reset/tecdainformação_serviços_azure/comum/azure/"
+                                            title="Azure">
+                                            <span>Azure</span>
+                                        </a>
+                                    </li>
+                                    <li class="has-child">
+                                        <a href="#" title="Soluções de Wi-fi">
+                                            <span>Soluções de Wi-fi</span>
+                                        </a>
+                                        <ul>
+                                            <li class=""
+                                                id="menu-item-tecdainformação_serviços_soluçõesdewifi_dispositivosiot">
+                                                <a href="/djtools/breadcrumbs_reset/tecdainformação_serviços_soluçõesdewifi_dispositivosiot/admin/integracao_wifi/autorizacaodispositivo/"
+                                                    title="Dispositivos IoT">
+                                                    <span>Dispositivos IoT</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Usuários">
+                                    <span>Usuários</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-tecdainformação_usuários_minhaconta">
+                                        <a href="/djtools/breadcrumbs_reset/tecdainformação_usuários_minhaconta/comum/minha_conta/"
+                                            title="Minha Conta">
+                                            <span>Minha Conta</span>
+                                        </a>
+                                    </li>
+                                    <li class="has-child">
+                                        <a href="#" title="Notificações">
+                                            <span>Notificações</span>
+                                        </a>
+                                        <ul>
+                                            <li class=""
+                                                id="menu-item-tecdainformação_usuários_notificações_notificações">
+                                                <a href="/djtools/breadcrumbs_reset/tecdainformação_usuários_notificações_notificações/comum/notificacoes/"
+                                                    title="Notificações">
+                                                    <span>Notificações</span>
+                                                </a>
+                                            </li>
+                                            <li class=""
+                                                id="menu-item-tecdainformação_usuários_notificações_preferências">
+                                                <a href="/djtools/breadcrumbs_reset/tecdainformação_usuários_notificações_preferências/admin/comum/preferencianotificacao/"
+                                                    title="Preferências">
+                                                    <span>Preferências</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="has-child menu-central-de-servicos">
+                        <a href="#" title="Central de Serviços">
+                            <span class="fas fa-central-de-servicos" aria-hidden="true"></span>
+                            <span>Central de Serviços</span>
+                        </a>
+                        <ul>
+                            <li class="" id="menu-item-centraldeserviços_abrirchamado">
+                                <a href="/djtools/breadcrumbs_reset/centraldeserviços_abrirchamado/centralservicos/listar_area_servico/"
+                                    title="Abrir Chamado">
+                                    <span>Abrir Chamado</span>
+                                </a>
+                            </li>
+                            <li class="" id="menu-item-centraldeserviços_basedeconhecimentos">
+                                <a href="/djtools/breadcrumbs_reset/centraldeserviços_basedeconhecimentos/centralservicos/baseconhecimento/"
+                                    title="Base de Conhecimentos">
+                                    <span>Base de Conhecimentos</span>
+                                </a>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Cadastros">
+                                    <span>Cadastros</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-centraldeserviços_cadastros_gestoresdasáreasdeserviços">
+                                        <a href="/djtools/breadcrumbs_reset/centraldeserviços_cadastros_gestoresdasáreasdeserviços/admin/centralservicos/gestorareaservico/"
+                                            title="Gestores das Áreas de Serviços">
+                                            <span>Gestores das Áreas de Serviços</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="" id="menu-item-centraldeserviços_meuschamados">
+                                <a href="/djtools/breadcrumbs_reset/centraldeserviços_meuschamados/centralservicos/meus_chamados/?tab=ativos"
+                                    title="Meus Chamados">
+                                    <span>Meus Chamados</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="has-child menu-atividades-estudantis">
+                        <a href="#" title="Atividades Estudantis">
+                            <span class="fas fa-atividades-estudantis" aria-hidden="true"></span>
+                            <span>Atividades Estudantis</span>
+                        </a>
+                        <ul>
+                            <li class="has-child">
+                                <a href="#" title="Serviço Social">
+                                    <span>Serviço Social</span>
+                                </a>
+                                <ul>
+                                    <li class=""
+                                        id="menu-item-atividadesestudantis_serviçosocial_caracterizaçãosocioeconômica">
+                                        <a href="/djtools/breadcrumbs_reset/atividadesestudantis_serviçosocial_caracterizaçãosocioeconômica/ae/caracterizacao/"
+                                            title="Caracterização Socioeconômica">
+                                            <span>Caracterização Socioeconômica</span>
+                                        </a>
+                                    </li>
+                                    <li class="has-child">
+                                        <a href="#" title="Programas">
+                                            <span>Programas</span>
+                                        </a>
+                                        <ul>
+                                            <li class=""
+                                                id="menu-item-atividadesestudantis_serviçosocial_programas_inscrições">
+                                                <a href="/djtools/breadcrumbs_reset/atividadesestudantis_serviçosocial_programas_inscrições/admin/ae/inscricao/"
+                                                    title="Inscrições">
+                                                    <span>Inscrições</span>
+                                                </a>
+                                            </li>
+                                            <li class=""
+                                                id="menu-item-atividadesestudantis_serviçosocial_programas_minhasinscrições">
+                                                <a href="/djtools/breadcrumbs_reset/atividadesestudantis_serviçosocial_programas_minhasinscrições/ae/redireciona_minhas_inscricoes/"
+                                                    title="Minhas Inscrições">
+                                                    <span>Minhas Inscrições</span>
+                                                </a>
+                                            </li>
+                                            <li class=""
+                                                id="menu-item-atividadesestudantis_serviçosocial_programas_meuscomprovantesmensais">
+                                                <a href="/djtools/breadcrumbs_reset/atividadesestudantis_serviçosocial_programas_meuscomprovantesmensais/ae/meus_comprovantes_mensais/"
+                                                    title="Meus Comprovantes Mensais">
+                                                    <span>Meus Comprovantes Mensais</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li class=""
+                                        id="menu-item-atividadesestudantis_serviçosocial_solicitaçõesdeauxílioseventuais">
+                                        <a href="/djtools/breadcrumbs_reset/atividadesestudantis_serviçosocial_solicitaçõesdeauxílioseventuais/admin/ae/solicitacaoauxilioaluno/"
+                                            title="Solicitações de Auxílios Eventuais">
+                                            <span>Solicitações de Auxílios Eventuais</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="" id="menu-item-atividadesestudantis_agendadeatendimentos">
+                                <a href="/djtools/breadcrumbs_reset/atividadesestudantis_agendadeatendimentos/saude/agenda_atendimentos/"
+                                    title="Agenda de Atendimentos">
+                                    <span>Agenda de Atendimentos</span>
+                                </a>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Ações Emergenciais">
+                                    <span>Ações Emergenciais</span>
+                                </a>
+                                <ul>
+                                    <li class="has-child">
+                                        <a href="#" title="Programas de Auxílios Emergenciais">
+                                            <span>Programas de Auxílios Emergenciais</span>
+                                        </a>
+                                        <ul>
+                                            <li class=""
+                                                id="menu-item-atividadesestudantis_açõesemergenciais_programasdeauxíliosemergenciais_minhasinscrições">
+                                                <a href="/djtools/breadcrumbs_reset/atividadesestudantis_açõesemergenciais_programasdeauxíliosemergenciais_minhasinscrições/auxilioemergencial/minhas_inscricoes/"
+                                                    title="Minhas Inscrições">
+                                                    <span>Minhas Inscrições</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="has-child menu-saude">
+                        <a href="#" title="Saúde">
+                            <span class="fas fa-saude" aria-hidden="true"></span>
+                            <span>Saúde</span>
+                        </a>
+                        <ul>
+                            <li class="has-child">
+                                <a href="#" title="Relatórios">
+                                    <span>Relatórios</span>
+                                </a>
+                                <ul>
+                                    <li class="has-child">
+                                        <a href="#" title="Relatório de Atendimentos">
+                                            <span>Relatório de Atendimentos</span>
+                                        </a>
+                                        <ul>
+                                            <li class=""
+                                                id="menu-item-saúde_relatórios_relatóriodeatendimentos_registrosadministrativos">
+                                                <a href="/djtools/breadcrumbs_reset/saúde_relatórios_relatóriodeatendimentos_registrosadministrativos/admin/saude/registroadministrativo/"
+                                                    title="Registros Administrativos">
+                                                    <span>Registros Administrativos</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="" id="menu-item-saúde_agendadeatendimentos">
+                                <a href="/djtools/breadcrumbs_reset/saúde_agendadeatendimentos/saude/agenda_atendimentos/"
+                                    title="Agenda de Atendimentos">
+                                    <span>Agenda de Atendimentos</span>
+                                </a>
+                            </li>
+                            <li class="" id="menu-item-saúde_cartãovacinal">
+                                <a href="/djtools/breadcrumbs_reset/saúde_cartãovacinal/saude/cartao_vacinal/"
+                                    title="Cartão Vacinal">
+                                    <span>Cartão Vacinal</span>
+                                </a>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="COVID-19">
+                                    <span>COVID-19</span>
+                                </a>
+                                <ul>
+                                    <li class="has-child">
+                                        <a href="#" title="Passaporte Vacinal">
+                                            <span>Passaporte Vacinal</span>
+                                        </a>
+                                        <ul>
+                                            <li class=""
+                                                id="menu-item-saúde_covid19_passaportevacinal_meupassaportevacinal">
+                                                <a href="/djtools/breadcrumbs_reset/saúde_covid19_passaportevacinal_meupassaportevacinal/saude/passaporte_vacinacao_covid/"
+                                                    title="Meu Passaporte Vacinal">
+                                                    <span>Meu Passaporte Vacinal</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li class="" id="menu-item-saúde_covid19_monitoramento">
+                                        <a href="/djtools/breadcrumbs_reset/saúde_covid19_monitoramento/saude/relatorio_notificacao_covid/"
+                                            title="Monitoramento">
+                                            <span>Monitoramento</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="" id="menu-item-saúde_registrosadministrativos">
+                                <a href="/djtools/breadcrumbs_reset/saúde_registrosadministrativos/admin/saude/registroadministrativo/"
+                                    title="Registros Administrativos">
+                                    <span>Registros Administrativos</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="has-child menu-comunicacao-social">
+                        <a href="#" title="Comunicação Social">
+                            <span class="fas fa-comunicacao-social" aria-hidden="true"></span>
+                            <span>Comunicação Social</span>
+                        </a>
+                        <ul>
+                            <li class="" id="menu-item-comunicaçãosocial_enquetes">
+                                <a href="/djtools/breadcrumbs_reset/comunicaçãosocial_enquetes/admin/enquete/enquete/"
+                                    title="Enquetes">
+                                    <span>Enquetes</span>
+                                </a>
+                            </li>
+                            <li class="" id="menu-item-comunicaçãosocial_eventos">
+                                <a href="/djtools/breadcrumbs_reset/comunicaçãosocial_eventos/admin/eventos/evento/"
+                                    title="Eventos">
+                                    <span>Eventos</span>
+                                </a>
+                            </li>
+                            <li class="has-child">
+                                <a href="#" title="Relatórios">
+                                    <span>Relatórios</span>
+                                </a>
+                                <ul>
+                                    <li class="" id="menu-item-comunicaçãosocial_relatórios_calendáriodeeventos">
+                                        <a href="/djtools/breadcrumbs_reset/comunicaçãosocial_relatórios_calendáriodeeventos/eventos/calendario_eventos/"
+                                            title="Calendário de Eventos">
+                                            <span>Calendário de Eventos</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-comunicaçãosocial_relatórios_relatóriodeeventos">
+                                        <a href="/djtools/breadcrumbs_reset/comunicaçãosocial_relatórios_relatóriodeeventos/eventos/relatorio/"
+                                            title="Relatório de Eventos">
+                                            <span>Relatório de Eventos</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-comunicaçãosocial_relatórios_relatórioparticipantes">
+                                        <a href="/djtools/breadcrumbs_reset/comunicaçãosocial_relatórios_relatórioparticipantes/eventos/relatorio_participantes/"
+                                            title="Relatório Participantes">
+                                            <span>Relatório Participantes</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="has-child menu-des-institucional">
+                        <a href="#" title="Des. Institucional">
+                            <span class="fas fa-des-institucional" aria-hidden="true"></span>
+                            <span>Des. Institucional</span>
+                        </a>
+                        <ul>
+                            <li class="has-child">
+                                <a href="#" title="Planejamento Estratégico">
+                                    <span>Planejamento Estratégico</span>
+                                </a>
+                                <ul>
+                                    <li class=""
+                                        id="menu-item-desinstitucional_planejamentoestratégico_faroldedesempenho">
+                                        <a href="/djtools/breadcrumbs_reset/desinstitucional_planejamentoestratégico_faroldedesempenho/plan_estrategico/pdi/1/farol/"
+                                            title="Farol de Desempenho">
+                                            <span>Farol de Desempenho</span>
+                                        </a>
+                                    </li>
+                                    <li class="" id="menu-item-desinstitucional_planejamentoestratégico_pdi">
+                                        <a href="/djtools/breadcrumbs_reset/desinstitucional_planejamentoestratégico_pdi/plan_estrategico/pdi/"
+                                            title="PDI">
+                                            <span>PDI</span>
+                                        </a>
+                                    </li>
+                                    <li class="has-child">
+                                        <a href="#" title="Relatórios">
+                                            <span>Relatórios</span>
+                                        </a>
+                                        <ul>
+                                            <li class=""
+                                                id="menu-item-desinstitucional_planejamentoestratégico_relatórios_relatóriodeindicadores">
+                                                <a href="/djtools/breadcrumbs_reset/desinstitucional_planejamentoestratégico_relatórios_relatóriodeindicadores/plan_estrategico/relatorio_indicadores_pdi/"
+                                                    title="Relatório de Indicadores">
+                                                    <span>Relatório de Indicadores</span>
+                                                </a>
+                                            </li>
+                                            <li class=""
+                                                id="menu-item-desinstitucional_planejamentoestratégico_relatórios_relatóriodeindicadoresderede">
+                                                <a href="/djtools/breadcrumbs_reset/desinstitucional_planejamentoestratégico_relatórios_relatóriodeindicadoresderede/plan_estrategico/relatorio_rede/"
+                                                    title="Relatório de Indicadores de Rede">
+                                                    <span>Relatório de Indicadores de Rede</span>
+                                                </a>
+                                            </li>
+                                            <li class=""
+                                                id="menu-item-desinstitucional_planejamentoestratégico_relatórios_relatóriolinhadotempo">
+                                                <a href="/djtools/breadcrumbs_reset/desinstitucional_planejamentoestratégico_relatórios_relatóriolinhadotempo/plan_estrategico/relatorio_linhadotempo/"
+                                                    title="Relatório Linha do Tempo">
+                                                    <span>Relatório Linha do Tempo</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="menu-logout">
+                        <a href="/comum/logout/" title="Sair">
+                            <span class="fas fa-sign-out-alt" aria-hidden="true"></span>
+                            <span>Sair</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+        <div class="alertas">
+            <div class="content"></div>
+            <div class="loader"></div>
+            <div class="reload-button justify-content-center">
+                <button class="btn text-center">
+                    <span class="fas fa-reload" aria-hidden="true"></span>
+                    Atualizar Alertas
+
+                </button>
+            </div>
+        </div>
+        <main id="content">
+            <div id="breadcrumbs">
+                <a href="/">Início</a>
+            </div>
+            <div class="grid-container" id="quadros">
+                <div class="coluna coluna-esquerda">
+                    <div class="content"></div>
+                    <div class="loader"></div>
+                </div>
+                <div class="coluna coluna-centro">
+                    <div class="content"></div>
+                    <div class="loader"></div>
+                </div>
+                <div class="coluna coluna-direita">
+                    <div class="content"></div>
+                    <div class="loader"></div>
+                </div>
+            </div>
+            <ul class="action-links">
+                <li>
+                    <a href="/comum/index/exibir_quadro/" class="btn popup float-end">
+                        <span class="fas fa-th" aria-hidden="true"></span>
+                        Quadros
+                    </a>
+                </li>
+                <li>
+                    <a href="/erros/reportar_erro/?url=Lw==" class="btn default">
+                        <span class="fas fa-bug" aria-hidden="true"></span>
+                        Reportar Erro do Sistema
+                    </a>
+                </li>
+                <li>
+                    <button id="actionPrint" class="btn">
+                        <span class="fas fa-print" aria-hidden="true"></span>
+                        Imprimir
+                    </button>
+                </li>
+                <li>
+                    <button id="topodapagina" class="btn">
+                        <span class="fas fa-caret-up" aria-hidden="true"></span>
+                        Topo da Página
+                    </button>
+                </li>
+            </ul>
+        </main>
+        <footer id="footer">
+            <div class="flex-container">
+                <div class="flex-item flex-grow-2">
+                    <h3>Sobre o SUAP</h3>
+                    <h4>Sistema Unificado de Administração Pública</h4>
+                    <p>Um software desenvolvido por uma instituição pública para instituições públicas.</p>
+                    <ul class="mt-3">
+                        <li>
+                            <a href="http://portal.suap.ifrn.edu.br">
+                                <span class="fas fa-link" aria-hidden="true"></span>
+                                Portal do SUAP
+                            </a>
+                        </li>
+                        <li>
+                            <a href="http://portal.ifrn.edu.br">
+                                <span class="fas fa-link" aria-hidden="true"></span>
+                                Portal do IFRN
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="flex-item flex-grow-2">
+                    <h3>Links Úteis</h3>
+                    <ul class="links-uteis">
+                        <li>
+                            <a href="/comum/documentacao/">
+                                <span class="fas fa-question-circle" aria-hidden="true"></span>
+                                Documentação
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/comum/temas/">
+                                <span class="fas fa-palette" aria-hidden="true"></span>
+                                Temas
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/comum/acessibilidade/">
+                                <span class="fas fa-universal-access" aria-hidden="true"></span>
+                                Acessibilidade
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/admin/comum/sessioninfo/">
+                                <span class="fas fa-sign-in-alt" aria-hidden="true"></span>
+                                Sessões
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/comum/documentos_emitidos_suap/">
+                                <span class="fas fa-file-pdf" aria-hidden="true"></span>
+                                Meus Documentos
+
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/comum/minhas_acoes_suap/">
+                                <span class="fas fa-bullseye" aria-hidden="true"></span>
+                                Minhas Ações
+
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/ldap_backend/redirecionar_google_classroom/">
+                                <span class="fas fa-google fab" aria-hidden="true"></span>
+                                Google Sala de Aula
+
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/comum/telefones/">
+                                <span class="fas fa-phone" aria-hidden="true"></span>
+                                Telefones
+
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://play.google.com/store/apps/details?id=br.edu.ifrn.suap.mobile">
+                                <span class="fas fa-mobile" aria-hidden="true"></span>
+                                SUAP Mobile (Android)
+
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="flex-item">
+                    <h3>Informações Técnicas</h3>
+                    <dl>
+                        <dt>Servidor:</dt>
+                        <dd>omaha - 31e4f9be75bb</dd>
+                        <dt>Última extração do SIAPE:</dt>
+                        <dd>09/03/2024</dd>
+                        <dt>Última atualização do SUAP:</dt>
+                        <dd>
+                            <a href="/admin/demandas/atualizacao/">12/03/2024 23:20</a>
+                        </dd>
+                        <dt>Responsável:</dt>
+                        <dd>Diretoria de Gestão de Tecnologia da Informação/IFRN</dd>
+                        <dt hidden>Desenvolvimento:</dt>
+                        <dd>
+                            <a href="http://www.djangoproject.com/" class="footer-django">Feito com Django</a>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </footer>
+        <a href="#0" class="go-to-bottom">Ir para Rodapé</a>
+    </div>
+    <script>
+        jQuery(document).ready(function () {
+            open_menu_item("");
+            $(window).on("unload", function () {
+                $('input[type=submit]').removeAttr('disabled');
+            });
+
+            input_submit_on_click();
+
+            // remove o label padrão do django
+            var labeless = $('input.labeless');
+            labeless.prev().remove();
+            labeless.next().addClass('help_marginless');
+            labeless.next().removeClass('help');
+
+            // adicionar uma cor padrão que indica que os campos estão desabilitados
+            $('input[readonly=true]').css('background-color', '#eee');
+            $('textarea[readonly=true]').css('background-color', '#eee');
+
+            // reseta o formulário da página
+            $('#btn_reset_forms').click(function () {
+                $('form').each(function () {
+                    this.reset();
+                });
+            });
+        });
+    </script>
+    <script type="text/javascript" src="/JavaScript/fancybox.js" charset="utf-8"></script>
+</body>
+
+</html>
