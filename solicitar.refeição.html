@@ -1089,11 +1089,46 @@
             </div>
 
             <!-- começo do container de pedir doação -->
-            <div class="tab-container" data-title="Solicitação de Emergência" data-counter="">
-                <fieldset>
-                    <h1>VAMOS TRABALHAR AQUI</h1>
-                </fieldset>
-            </div>
+                <div class="tab-container" data-title="Solicitação de Emergência">
+                    <form action="" name="solicitacaorefeicaoaluno_form" id="solicitacaorefeicaoaluno_form" class=""
+                        method="POST">
+                        <input type="hidden" name="csrfmiddlewaretoken"
+                            value="t92Jsx38PJukTw4iFmuC27qgIpibNtvWGUFfhABHKQjog8d0jt1fgV6V0Fs2vLAx">
+                        <fieldset class="module aligned ">
+                            <div class="msg alert">
+                                <dl>
+                                    <dt>Solicitação de Emergencia:</dt>
+                                    <dd>Deve ser solicitado entre meia-noite do Dia anterior e 3 p.m. do Dia anterior.</dd>
+                                </dl>
+                            </div>
+                            <div class="form-row tipo_refeicao_escolhido ">
+                                <div class="field-box-first required">
+                                    <label for="id_tipo_refeicao_escolhido">Tipo de Refeição:</label>
+                                    <select name="tipo_refeicao_escolhido" autocomplete="off"
+                                        id="id_tipo_refeicao_escolhido">
+                                        <option value="0">Selecione o Tipo</option>
+                                        <option value="1">Jantar</option>
+                                        <option value="2">Almoço</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row escolha_motivo_solicitacao ">
+                                <div class="field-box-first required">
+                                    <label for="id_escolha_motivo_solicitacao">Motivo da Solicitação:</label>
+                                    <select name="escolha_motivo_solicitacao" autocomplete="off"
+                                        id="id_escolha_motivo_solicitacao">
+                                        <option value="" selected>---------</option>
+                                       <!-- area dos motivos -->
+                                    </select>
+                                </div>
+                            </div>
+                            
+                        </fieldset>
+                        <div class="submit-row">
+                            <a  name="solicitacaorefeicaoaluno_form" class="btn success" onclick="">Enviar</a>
+                        </div>
+                    </form>
+                </div>
             <!-- fim do container -->
 
             <ul class="action-links">
